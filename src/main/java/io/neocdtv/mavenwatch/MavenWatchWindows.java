@@ -43,12 +43,12 @@ public class MavenWatchWindows {
         registerDirectoryAndProcessItsEvents(args[0]);
     }
 
-    public static void registerDirectoryAndProcessItsEvents(String dirToWatch) throws IOException {
+    private static void registerDirectoryAndProcessItsEvents(String dirToWatch) throws IOException {
         Path dir = Paths.get(dirToWatch);
         new MavenWatchWindows(dir).processEvents();
     }
 
-    static <T> WatchEvent<T> castEvent(WatchEvent<?> event) {
+    private static <T> WatchEvent<T> castEvent(WatchEvent<?> event) {
         return (WatchEvent<T>) event;
     }
 
@@ -60,13 +60,13 @@ public class MavenWatchWindows {
         watchedDirectories.put(watchedDirectory, directoryToWatch);
     }
 
-    MavenWatchWindows(Path directoryToWatch) throws IOException {
+    private MavenWatchWindows(Path directoryToWatch) throws IOException {
         this.watcher = FileSystems.getDefault().newWatchService();
         this.watchedDirectories = new HashMap<>();
         registerDirectoryToBeWatched(directoryToWatch);
     }
 
-    void processEvents() throws IOException {
+    private void processEvents() throws IOException {
         for (; ; ) {
             WatchKey watchKey;
             try {
@@ -95,6 +95,7 @@ public class MavenWatchWindows {
                             findAndDeleteAllFiles(changedFilePath, MAVEN_TARGET_GENERATED_SOURCES, MAVEN_TARGET_GENERATED_TEST_SOURCES);
                         }
                     } else {
+                        // TODO: add deletion for generated (test)sources
                         deleteEmptyDirectory(watchEvent, changedFilePath);
                     }
                 }
@@ -107,7 +108,7 @@ public class MavenWatchWindows {
         }
     }
 
-    public boolean resetKeyAndRemoveFromSetIfDirectoryNoLongerAccessible(WatchKey key) {
+    private boolean resetKeyAndRemoveFromSetIfDirectoryNoLongerAccessible(WatchKey key) {
         // reset key and remove from set if directory no longer accessible
         final boolean valid = key.reset();
         if (!valid) {
@@ -120,7 +121,7 @@ public class MavenWatchWindows {
         return false;
     }
 
-    public void findAndDeleteAllFiles(final Path file, final String replaceSrcJavaWith, final String replaceSrcTestWith) throws IOException {
+    private void findAndDeleteAllFiles(final Path file, final String replaceSrcJavaWith, final String replaceSrcTestWith) throws IOException {
         final String srcPath = file.toFile().toURI().getPath();
         if (isSrcMainJava(srcPath)) {
             final String targetClazz = srcPath.replaceFirst(MAVEN_SRC_MAIN_JAVA, replaceSrcJavaWith).replaceFirst(SUFFIX_JAVA, "");
@@ -133,7 +134,7 @@ public class MavenWatchWindows {
         }
     }
 
-    public void deleteEmptyDirectory(final WatchEvent watchEvent, final Path directory) throws IOException {
+    private void deleteEmptyDirectory(final WatchEvent watchEvent, final Path directory) throws IOException {
         String srcPath = directory.toFile().toURI().getPath();
         if (isSrcMainJava(srcPath)) {
             final String targetDirectory = srcPath.replaceFirst(MAVEN_SRC_MAIN_JAVA, MAVEN_TARGET_CLASSES);
@@ -152,15 +153,15 @@ public class MavenWatchWindows {
         }
     }
 
-    boolean isSrcMainJava(final String srcPath) {
+    private boolean isSrcMainJava(final String srcPath) {
         return srcPath.contains(MAVEN_SRC_MAIN_JAVA);
     }
 
-    public boolean isSrcTestJava(final String srcPath) {
+    private boolean isSrcTestJava(final String srcPath) {
         return srcPath.contains(MAVEN_SRC_TEST_JAVA);
     }
 
-    public static void findAndDelete(final File fileWitoutSuffixInTargetDirectory) {
+    private static void findAndDelete(final File fileWitoutSuffixInTargetDirectory) {
         final String classNameWithOutSuffix = fileWitoutSuffixInTargetDirectory.getName();
         final String targetDirectory = fileWitoutSuffixInTargetDirectory.getParentFile().toURI().getPath();
         final File targetDirectoryFile = new File(targetDirectory);
@@ -176,17 +177,17 @@ public class MavenWatchWindows {
         }
     }
 
-    public static void deleteFile(final File file) {
+    private static void deleteFile(final File file) {
         boolean delete = file.delete();
         LOGGER.log(Level.INFO, "DELETED FILE {0}", Arrays.asList(file.getAbsolutePath(), delete, file.isDirectory()));
     }
 
-    public static boolean isDirectoryEmpty(final File file) {
+    private static boolean isDirectoryEmpty(final File file) {
         return file.list().length == 0;
     }
 
-    public static boolean isNotWindows() {
-        return !(OS.indexOf("win") >= 0);
+    private static boolean isNotWindows() {
+        return !OS.contains("win");
     }
 
     private static void configureLogger(final Level level) {
